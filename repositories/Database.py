@@ -3,7 +3,6 @@ import os
 
 
 class Database:
-
     # 1. connectie openen met classe variabelen voor hergebruik
     @staticmethod
     def __open_connection():
@@ -26,6 +25,7 @@ class Database:
                 print(err)
             return
 
+
     # 2. Executes READS
     @staticmethod
     def get_rows(sqlQuery, params=None):
@@ -44,6 +44,7 @@ class Database:
         finally:
             return result
 
+
     @staticmethod
     def get_one_row(sqlQuery, params=None):
         Database.__open_connection()
@@ -59,6 +60,7 @@ class Database:
         finally:
             Database.db.close()
             return result
+
 
     # 3. Executes INSERT, UPDATE, DELETE with PARAMETERS
     @staticmethod
