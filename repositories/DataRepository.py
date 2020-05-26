@@ -9,3 +9,9 @@ class DataRepository:
         else:
             gegevens = request.form.to_dict()
         return gegevens
+
+    @staticmethod
+    def read_value_sensor(sensorid, date):
+        sql = 'SELECT Datum, Waarde FROM Historiek WHERE ApparaatID = %s AND Datum LIKE "%s%" ORDER BY Datum'
+        params = [sensorid, date]
+        return Database.get_rows(sql, params)
