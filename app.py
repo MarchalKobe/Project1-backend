@@ -2,6 +2,26 @@ from repositories.DataRepository import DataRepository
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
+import threading
+from time import sleep
+
+from Temperatuursensor import Temperatuursensor
+
+
+# THREAD
+temperatuursensor = Temperatuursensor("28-00000bac625e")
+
+
+def temperatuur():
+    while True:
+        temperatuur = temperatuursensor.get_temperature()
+        print(temperatuur)
+        sleep(1)
+
+
+
+temperatuur_proces = threading.Thread(target=temperatuur)
+temperatuur_proces.start()
 
 # Start app
 app = Flask(__name__)
