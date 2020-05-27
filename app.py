@@ -82,7 +82,7 @@ def aanmelden():
     passwordDB = DataRepository.get_password_by_user(username)
 
     if password == passwordDB["Wachtwoord"]:
-        expires = timedelta(seconds=10)
+        expires = timedelta(hours=12)
         access_token = create_access_token(identity=username, expires_delta=expires)
         return(jsonify(message="aangemeld",access_token=access_token)), 200
     else:
