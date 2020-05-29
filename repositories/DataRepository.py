@@ -44,6 +44,6 @@ class DataRepository:
     @staticmethod
     def read_activiteiten(date):
         date = f"{date}%"
-        sql = "SELECT Datum, Activiteit, LinkID FROM Activiteiten WHERE Datum LIKE %s ORDER BY Datum"
+        sql = "SELECT ActiviteitID, Datum, Activiteit, LinkID FROM Activiteiten WHERE Datum LIKE %s ORDER BY Datum"
         params = [date]
         return Database.get_rows(sql, params)
