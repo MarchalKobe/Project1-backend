@@ -31,3 +31,11 @@ class DataRepository:
         sql = "SELECT Wachtwoord FROM Gebruikers WHERE Naam = %s"
         params = [username]
         return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def read_activiteiten(date):
+        date = f"{date}%"
+        sql = "SELECT Datum, Activiteit, LinkID FROM Activiteiten WHERE Datum LIKE %s ORDER BY Datum"
+        params = [date]
+        return Database.get_rows(sql, params)
