@@ -66,7 +66,7 @@ def index():
 
 
 @app.route(endpoint + "/sensoren/<sensor_id>/<date>", methods=["GET"])
-# @jwt_required
+@jwt_required
 def get_sensoren_data(sensor_id, date):
     if request.method == "GET":
         return jsonify(sensor_waarden=DataRepository.read_value_sensor(sensor_id, date)), 200
@@ -87,6 +87,12 @@ def aanmelden():
         return(jsonify(message="aangemeld",access_token=access_token)), 200
     else:
         return(jsonify(message="error")), 401
+
+
+@app.route(endpoint + "/activiteiten/<date>/days", methods=["GET"])
+def get_activiteiten_days(date):
+    if request.method == "GET":
+        return jsonify(days=DataRepository.read_activiteiten_days(date)), 200
 
 
 @app.route(endpoint + "/activiteiten/<date>", methods=["GET"])
