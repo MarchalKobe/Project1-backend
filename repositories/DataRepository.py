@@ -47,3 +47,24 @@ class DataRepository:
         sql = "SELECT ActiviteitID, Datum, Activiteit, LinkID FROM Activiteiten WHERE Datum LIKE %s ORDER BY Datum"
         params = [date]
         return Database.get_rows(sql, params)
+    
+
+    @staticmethod
+    def get_activiteiten_link(id):
+        sql = "SELECT LinkID FROM Activiteiten WHERE ActiviteitID = %s"
+        params = [id]
+        return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def update_activiteit(id, event, date):
+        sql = "UPDATE Activiteiten SET Activiteit = %s, Datum = %s WHERE ActiviteitID = %s"
+        params = [event, date, id]
+        return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
+    def delete_activiteit(id):
+        sql = "DELETE FROM Activiteiten WHERE ActiviteitID = %s"
+        params = [id]
+        return Database.execute_sql(sql, params)

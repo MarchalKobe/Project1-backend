@@ -65,13 +65,6 @@ def index():
     return "PLEASE VISIT API ROUTE"
 
 
-@app.route(endpoint + "/sensoren/<sensor_id>/<date>", methods=["GET"])
-@jwt_required
-def get_sensoren_data(sensor_id, date):
-    if request.method == "GET":
-        return jsonify(sensor_waarden=DataRepository.read_value_sensor(sensor_id, date)), 200
-
-
 @app.route(endpoint + "/aanmelden", methods=["POST"])
 def aanmelden():
     gegevens = DataRepository.json_or_formdata(request)
@@ -89,16 +82,51 @@ def aanmelden():
         return(jsonify(message="error")), 401
 
 
+@app.route(endpoint + "/sensoren/<sensor_id>/<date>", methods=["GET"])
+@jwt_required
+def get_sensoren_data(sensor_id, date):
+    if request.method == "GET":
+        return jsonify(sensor_waarden=DataRepository.read_value_sensor(sensor_id, date)), 200
+
+
 @app.route(endpoint + "/activiteiten/<date>/days", methods=["GET"])
+@jwt_required
 def get_activiteiten_days(date):
     if request.method == "GET":
         return jsonify(days=DataRepository.read_activiteiten_days(date)), 200
 
 
-@app.route(endpoint + "/activiteiten/<date>", methods=["GET"])
-def get_activiteiten(date):
+@app.route(endpoint + "/activiteiten/<idOrDate>", methods=["GET", "PUT", "DELETE"])
+@jwt_required
+def edit_activiteiten(idOrDate):
     if request.method == "GET":
-        return jsonify(activiteiten=DataRepository.read_activiteiten(date)), 200
+        return jsonify(activiteiten=DataRepository.read_activiteiten(idOrDate)), 200
+    elif request.method == "PUT":
+        link = DataRepository.get_activiteiten_link(idOrDate)
+
+        if(link["LinkID"] > 0):
+            info = DataRepository.json_or_formdata(request)
+            event = info["event"]
+            date = info["date"].replace("T", " ")
+            data = DataRepository.update_activiteit(idOrDate, event, date)
+            
+            if data is not None:
+                if data == -1:
+                    return jsonify(message="Fout: Deze activiteit bestaat niet of is gelinkt aan een externe kalender"), 404
+                elif data == 0:
+                    return jsonify(message="Geen gegevens aangepast"), 200
+                else:
+                    return jsonify(message="Succesvol aangepast", date=date.split(" ")[0]), 200
+            else:
+                return jsonify(message="error"), 404
+        else:
+            return jsonify(message="Fout: Deze activiteit is gelinkt aan een externe kalender"), 406
+    elif request.method == "DELETE":
+        data = DataRepository.delete_activiteit(idOrDate)
+        if data > 0:
+            return jsonify(message="Succesvol verwijderd"), 201
+        else:
+            return jsonify(message="Niks verwijderd"), 201
 
 
 if __name__ == "__main__":
