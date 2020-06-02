@@ -129,5 +129,17 @@ def edit_activiteiten(idOrDate):
             return jsonify(message="Niks verwijderd"), 201
 
 
+@app.route(endpoint + "/activiteiten", methods=["PUT"])
+def add_activiteit():
+    if request.method == "PUT":
+        eventData = DataRepository.json_or_formdata(request)
+        event = eventData["event"]
+        date = eventData["date"].replace("T", " ")
+
+        data = DataRepository.add_activiteit(event, date)
+
+        return jsonify(message="ok"), 200
+
+
 if __name__ == "__main__":
     socketio.run(app, debug=False, host='0.0.0.0')

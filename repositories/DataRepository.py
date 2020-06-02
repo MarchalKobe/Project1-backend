@@ -68,3 +68,10 @@ class DataRepository:
         sql = "DELETE FROM Activiteiten WHERE ActiviteitID = %s"
         params = [id]
         return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
+    def add_activiteit(event, date):
+        sql = "INSERT INTO Activiteiten (Activiteit, Datum) VALUES (%s, %s)"
+        params = [event, date]
+        return Database.execute_sql(sql, params)
