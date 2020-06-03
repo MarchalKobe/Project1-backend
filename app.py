@@ -104,7 +104,7 @@ def edit_activiteiten(idOrDate):
     elif request.method == "PUT":
         link = DataRepository.get_activiteiten_link(idOrDate)
 
-        if(link["LinkID"] > 0):
+        if link["LinkID"] is None:
             info = DataRepository.json_or_formdata(request)
             event = info["event"]
             date = info["date"].replace("T", " ")
@@ -130,15 +130,26 @@ def edit_activiteiten(idOrDate):
 
 
 @app.route(endpoint + "/activiteiten", methods=["PUT"])
+@jwt_required
 def add_activiteit():
     if request.method == "PUT":
         eventData = DataRepository.json_or_formdata(request)
         event = eventData["event"]
         date = eventData["date"].replace("T", " ")
 
-        data = DataRepository.add_activiteit(event, date)
+        if not event or not date:
+            return jsonify(message="error"), 422
+        else:
+            data = DataRepository.add_activiteit(event, date)
 
-        return jsonify(message="ok"), 200
+            return jsonify(message="ok"), 200
+
+
+@app.route(endpoint + "/links", methods=["GET"])
+@jwt_required
+def get_links():
+    if request.method == "GET":
+        return jsonify(links=DataRepository.get_links()), 200
 
 
 if __name__ == "__main__":

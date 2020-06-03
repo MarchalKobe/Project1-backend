@@ -75,3 +75,9 @@ class DataRepository:
         sql = "INSERT INTO Activiteiten (Activiteit, Datum) VALUES (%s, %s)"
         params = [event, date]
         return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
+    def get_links():
+        sql = "SELECT * FROM Links"
+        return Database.get_rows(sql)
