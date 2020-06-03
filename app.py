@@ -141,15 +141,34 @@ def add_activiteit():
             return jsonify(message="error"), 422
         else:
             data = DataRepository.add_activiteit(event, date)
-
             return jsonify(message="ok"), 200
 
 
-@app.route(endpoint + "/links", methods=["GET"])
+@app.route(endpoint + "/links", methods=["GET", "PUT"])
 @jwt_required
 def get_links():
     if request.method == "GET":
         return jsonify(links=DataRepository.get_links()), 200
+    elif request.method == "PUT":
+        link = DataRepository.json_or_formdata(request)
+        link = link["url"]
+
+        if not link:
+            return jsonify(message="Fout: gee"), 422
+        else:
+            data = DataRepository.add_link(link)
+            return jsonify(message="ok"), 200
+
+
+@app.route(endpoint + "/links/<id>", methods=["DELETE"])
+@jwt_required
+def delete_link(id):
+    if request.method == "DELETE":
+        data = DataRepository.delete_link(id)
+        if data > 0:
+            return jsonify(message="Succesvol verwijderd"), 201
+        else:
+            return jsonify(message="Niks verwijderd"), 201
 
 
 if __name__ == "__main__":

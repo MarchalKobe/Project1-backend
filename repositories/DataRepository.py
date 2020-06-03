@@ -81,3 +81,17 @@ class DataRepository:
     def get_links():
         sql = "SELECT * FROM Links"
         return Database.get_rows(sql)
+    
+
+    @staticmethod
+    def delete_link(id):
+        sql = "DELETE FROM Links WHERE LinkID = %s"
+        params = [id]
+        return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
+    def add_link(link):
+        sql = "INSERT INTO Links (Link) VALUES (%s)"
+        params = [link]
+        return Database.execute_sql(sql, params)
