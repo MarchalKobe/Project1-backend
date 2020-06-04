@@ -9,8 +9,18 @@ from datetime import datetime, timedelta
 from ics import Calendar
 import requests
 
+from RPi import GPIO
+import board
+import digitalio
+from PIL import Image, ImageDraw, ImageFont
+import adafruit_ssd1305
+import textwrap
+import pathlib
+from subprocess import check_output
+
 from Temperatuursensor import Temperatuursensor
 from Luchtkwaliteitsensor import Luchtkwaliteitsensor
+
 
 # THREAD Temperatuur
 temperatuursensor = Temperatuursensor("28-01145b8d5bf2")
@@ -30,6 +40,7 @@ def temperature():
 temperatuur_proces = threading.Timer(10, temperature)
 temperatuur_proces.start()
 
+
 # THREAD Luchtkwaliteit
 luchtkwaliteitsensor = Luchtkwaliteitsensor()
 
@@ -48,6 +59,7 @@ luchtkwaliteit_proces = threading.Timer(10, airquality)
 luchtkwaliteit_proces.start()
 
 calendarStop = False
+
 
 # THREAD Calendar
 def calendar():
@@ -89,6 +101,155 @@ def calendar():
 
 calendar_proces = threading.Timer(10, calendar)
 calendar_proces.start()
+
+
+# THREAD interface
+interface_button_up = 5
+interface_button_down = 12
+interface_button_right = 6
+
+GPIO.setup(interface_button_up, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(interface_button_down, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(interface_button_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+WIDTH = 128
+HEIGHT = 64
+
+spi = board.SPI()
+oled_cs = digitalio.DigitalInOut(board.D19)
+oled_dc = digitalio.DigitalInOut(board.D16)
+oled_reset = digitalio.DigitalInOut(board.D20)
+oled = adafruit_ssd1305.SSD1305_SPI(WIDTH, HEIGHT, spi, oled_dc, oled_reset, oled_cs)
+
+image = font = draw = ""
+rightButtonPressed = False
+interfaceNumber = 1
+
+
+def interface_agenda():
+    global image, font, draw
+
+    image = Image.new('1', (oled.width, oled.height))
+    draw = ImageDraw.Draw(image)
+
+    text = "Interface agenda"
+    split = textwrap.wrap(text, width=21)
+
+    font_width, font_height = font.getsize(text)
+
+    line_height = 0
+
+    for line in split:
+        draw.text((0, line_height), line, font=font, fill=255)
+        line_height += font_height
+    
+    oled.image(image)
+    oled.show()
+
+
+def interface_klok():
+    global image, font, draw
+
+    image = Image.new('1', (oled.width, oled.height))
+    draw = ImageDraw.Draw(image)
+
+    text = "Interface klok"
+    split = textwrap.wrap(text, width=21)
+
+    font_width, font_height = font.getsize(text)
+
+    line_height = 0
+
+    for line in split:
+        draw.text((0, line_height), line, font=font, fill=255)
+        line_height += font_height
+    
+    oled.image(image)
+    oled.show()
+
+
+def interface_ip():
+    global image, font, draw
+
+    image = Image.new('1', (oled.width, oled.height))
+    draw = ImageDraw.Draw(image)
+
+    ips = check_output(["hostname", "--all-ip-addresses"])
+    ips = ips.decode("utf-8").split()
+
+    text = f"IP: {ips[0]}"
+    draw.text((0, 0), text, font=font, fill=255)
+    
+    oled.image(image)
+    oled.show()
+
+
+def button_up(channel):
+    print("UP")
+
+
+def button_down(channel):
+    print("DOWN")
+
+
+def button_right(channel):
+    global rightButtonPressed
+    rightButtonPressed = True
+
+
+def interface():
+    global image, font, draw, rightButtonPressed, interfaceNumber
+
+    oled.fill(0)
+    oled.show()
+
+    image = Image.new('1', (oled.width, oled.height))
+
+    draw = ImageDraw.Draw(image)
+
+    path = pathlib.Path(__file__).parent.absolute()
+    font = ImageFont.truetype(f"{path}/fonts/repet.ttf")
+
+    GPIO.add_event_detect(interface_button_up, GPIO.FALLING, callback=button_up, bouncetime=200)
+    GPIO.add_event_detect(interface_button_down, GPIO.FALLING, callback=button_down, bouncetime=200)
+    GPIO.add_event_detect(interface_button_right, GPIO.FALLING, callback=button_right, bouncetime=200)
+
+    interface_agenda()
+
+    while True:
+        if rightButtonPressed:
+            longPress = True
+            longPressTime = 0
+
+            while longPress and longPressTime <= 1:
+                if GPIO.input(interface_button_right) == GPIO.LOW:
+                    sleep(0.1)
+                    longPressTime += 0.1
+                else:
+                    longPress = False
+
+            if longPressTime >= 1:
+                if interfaceNumber == 1:
+                    interfaceNumber = 2
+                    interface_klok()
+                elif interfaceNumber == 2:
+                    interfaceNumber = 3
+                    interface_ip()
+                elif interfaceNumber == 3:
+                    interfaceNumber = 1
+                    interface_agenda()
+                
+                print(interfaceNumber)
+                print("LONG PRESS")
+                sleep(1)
+            else:
+                print("NOT LONG PRESS")
+            
+            rightButtonPressed = False
+
+
+interface_proces = threading.Timer(0, interface)
+interface_proces.start()
 
 # Start app
 app = Flask(__name__)
