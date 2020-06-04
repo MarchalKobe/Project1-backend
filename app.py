@@ -47,8 +47,12 @@ def airquality():
 luchtkwaliteit_proces = threading.Timer(10, airquality)
 luchtkwaliteit_proces.start()
 
+calendarStop = False
+
 # THREAD Calendar
 def calendar():
+    global calendarStop
+
     while True:
         links = DataRepository.get_links()
         
@@ -56,24 +60,30 @@ def calendar():
             print("Import calendar begin")
             
             for linkInformation in links:
-                linkID = linkInformation["LinkID"]
-                link = linkInformation["Link"]
-                
-                try:
-                    c = Calendar(requests.get(link).text)
-                    e = list(c.timeline)
+                if not calendarStop:
+                    linkID = linkInformation["LinkID"]
+                    link = linkInformation["Link"]
+                    
+                    try:
+                        c = Calendar(requests.get(link).text)
+                        e = list(c.timeline)
 
-                    for event in e:
-                        time = event.begin
-                        date = time.strftime("%Y-%m-%d %H:%M:%S")
-                        event = event.name
+                        for event in e:
+                            if not calendarStop:
+                                time = event.begin
+                                date = time.strftime("%Y-%m-%d %H:%M:%S")
+                                event = event.name
 
-                        DataRepository.add_activiteit_not_exists(event, date, linkID)
-                except Exception as e:
-                    print(e)
+                                print(calendarStop)
+                                DataRepository.add_activiteit_not_exists(event, date, linkID)
+                            else:
+                                DataRepository.delete_activiteiten(linkID)
+                    except Exception as e:
+                        print(e)
             
             print("Import calendar end")
 
+        calendarStop = False
         sleep(15)
 
 
@@ -87,7 +97,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app)
 
 # JWT
-app.config["JWT_SECRET_KEY"] = "Secret!"
+app.config["JWT_SECRET_KEY"] = "ZSwqNY%J%7?]\B3}"
 jwt = JWTManager(app)
 
 # Custom endpoint
@@ -206,10 +216,13 @@ def get_links():
 @app.route(endpoint + "/links/<id>", methods=["DELETE"])
 @jwt_required
 def delete_link(id):
+    global calendarStop
+
     if request.method == "DELETE":
         DataRepository.delete_activiteiten(id)
         data = DataRepository.delete_link(id)
         if data > 0:
+            calendarStop = True
             return jsonify(message="Succesvol verwijderd"), 201
         else:
             return jsonify(message="Niks verwijderd"), 201
