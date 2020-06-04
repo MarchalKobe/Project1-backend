@@ -10,16 +10,11 @@ from ics import Calendar
 import requests
 
 from RPi import GPIO
-import board
-import digitalio
-from PIL import Image, ImageDraw, ImageFont
-import adafruit_ssd1305
-import textwrap
-import pathlib
 from subprocess import check_output
 
 from Temperatuursensor import Temperatuursensor
 from Luchtkwaliteitsensor import Luchtkwaliteitsensor
+from OLED import OLED
 
 
 # THREAD Temperatuur
@@ -104,6 +99,8 @@ calendar_proces.start()
 
 
 # THREAD interface
+oled = OLED()
+
 interface_button_up = 5
 interface_button_down = 12
 interface_button_right = 6
@@ -112,76 +109,22 @@ GPIO.setup(interface_button_up, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(interface_button_down, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(interface_button_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-WIDTH = 128
-HEIGHT = 64
-
-spi = board.SPI()
-oled_cs = digitalio.DigitalInOut(board.D19)
-oled_dc = digitalio.DigitalInOut(board.D16)
-oled_reset = digitalio.DigitalInOut(board.D20)
-oled = adafruit_ssd1305.SSD1305_SPI(WIDTH, HEIGHT, spi, oled_dc, oled_reset, oled_cs)
-
-image = font = draw = ""
 rightButtonPressed = False
 interfaceNumber = 1
 
 
 def interface_agenda():
-    global image, font, draw
-
-    image = Image.new('1', (oled.width, oled.height))
-    draw = ImageDraw.Draw(image)
-
-    text = "Interface agenda"
-    split = textwrap.wrap(text, width=21)
-
-    font_width, font_height = font.getsize(text)
-
-    line_height = 0
-
-    for line in split:
-        draw.text((0, line_height), line, font=font, fill=255)
-        line_height += font_height
-    
-    oled.image(image)
-    oled.show()
+    oled.show_text("Interface agenda")
 
 
 def interface_klok():
-    global image, font, draw
-
-    image = Image.new('1', (oled.width, oled.height))
-    draw = ImageDraw.Draw(image)
-
-    text = "Interface klok"
-    split = textwrap.wrap(text, width=21)
-
-    font_width, font_height = font.getsize(text)
-
-    line_height = 0
-
-    for line in split:
-        draw.text((0, line_height), line, font=font, fill=255)
-        line_height += font_height
-    
-    oled.image(image)
-    oled.show()
+    oled.show_text("Interface klok")
 
 
 def interface_ip():
-    global image, font, draw
-
-    image = Image.new('1', (oled.width, oled.height))
-    draw = ImageDraw.Draw(image)
-
     ips = check_output(["hostname", "--all-ip-addresses"])
     ips = ips.decode("utf-8").split()
-
-    text = f"IP: {ips[0]}"
-    draw.text((0, 0), text, font=font, fill=255)
-    
-    oled.image(image)
-    oled.show()
+    oled.show_text(f"IP: {ips[0]}")
 
 
 def button_up(channel):
@@ -198,17 +141,7 @@ def button_right(channel):
 
 
 def interface():
-    global image, font, draw, rightButtonPressed, interfaceNumber
-
-    oled.fill(0)
-    oled.show()
-
-    image = Image.new('1', (oled.width, oled.height))
-
-    draw = ImageDraw.Draw(image)
-
-    path = pathlib.Path(__file__).parent.absolute()
-    font = ImageFont.truetype(f"{path}/fonts/repet.ttf")
+    global rightButtonPressed, interfaceNumber
 
     GPIO.add_event_detect(interface_button_up, GPIO.FALLING, callback=button_up, bouncetime=200)
     GPIO.add_event_detect(interface_button_down, GPIO.FALLING, callback=button_down, bouncetime=200)
