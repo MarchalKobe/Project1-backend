@@ -91,7 +91,21 @@ class DataRepository:
     
 
     @staticmethod
+    def delete_activiteiten(linkID):
+        sql = "DELETE FROM Activiteiten WHERE LinkID = %s"
+        params = [linkID]
+        return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
     def add_link(link):
         sql = "INSERT INTO Links (Link) VALUES (%s)"
         params = [link]
+        return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
+    def add_activiteit_not_exists(event, date, linkID):
+        sql = "INSERT INTO Activiteiten (Activiteit, Datum, linkID) SELECT * FROM (SELECT %s, %s, %s) AS tmp WHERE NOT EXISTS (SELECT Activiteit, Datum FROM Activiteiten WHERE Activiteit = %s AND Datum = %s AND LinkID = %s)"
+        params = [event, date, linkID, event, date, linkID]
         return Database.execute_sql(sql, params)

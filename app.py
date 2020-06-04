@@ -6,11 +6,13 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 import threading
 from time import sleep
 from datetime import datetime, timedelta
+from ics import Calendar
+import requests
 
 from Temperatuursensor import Temperatuursensor
 from Luchtkwaliteitsensor import Luchtkwaliteitsensor
 
-#THREAD Temperatuur
+# THREAD Temperatuur
 temperatuursensor = Temperatuursensor("28-01145b8d5bf2")
 
 
@@ -28,7 +30,7 @@ def temperature():
 temperatuur_proces = threading.Timer(10, temperature)
 temperatuur_proces.start()
 
-#THREAD Luchtkwaliteit
+# THREAD Luchtkwaliteit
 luchtkwaliteitsensor = Luchtkwaliteitsensor()
 
 
@@ -44,6 +46,39 @@ def airquality():
 
 luchtkwaliteit_proces = threading.Timer(10, airquality)
 luchtkwaliteit_proces.start()
+
+# THREAD Calendar
+def calendar():
+    while True:
+        links = DataRepository.get_links()
+        
+        if links:
+            print("Import calendar begin")
+            
+            for linkInformation in links:
+                linkID = linkInformation["LinkID"]
+                link = linkInformation["Link"]
+                
+                try:
+                    c = Calendar(requests.get(link).text)
+                    e = list(c.timeline)
+
+                    for event in e:
+                        time = event.begin
+                        date = time.strftime("%Y-%m-%d %H:%M:%S")
+                        event = event.name
+
+                        DataRepository.add_activiteit_not_exists(event, date, linkID)
+                except Exception as e:
+                    print(e)
+            
+            print("Import calendar end")
+
+        sleep(15)
+
+
+calendar_proces = threading.Timer(10, calendar)
+calendar_proces.start()
 
 # Start app
 app = Flask(__name__)
@@ -154,16 +189,25 @@ def get_links():
         link = link["url"]
 
         if not link:
-            return jsonify(message="Fout: gee"), 422
+            return jsonify(message="error"), 422
         else:
-            data = DataRepository.add_link(link)
-            return jsonify(message="ok"), 200
+            try:
+                urlRead = requests.get(link).text
+
+                if "BEGIN" in urlRead:
+                    data = DataRepository.add_link(link)
+                    return jsonify(message="ok"), 200
+                else:
+                    return jsonify(message="error"), 422
+            except Exception:
+                return jsonify(message="error"), 422
 
 
 @app.route(endpoint + "/links/<id>", methods=["DELETE"])
 @jwt_required
 def delete_link(id):
     if request.method == "DELETE":
+        DataRepository.delete_activiteiten(id)
         data = DataRepository.delete_link(id)
         if data > 0:
             return jsonify(message="Succesvol verwijderd"), 201
