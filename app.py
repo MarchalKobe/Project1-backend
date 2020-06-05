@@ -210,11 +210,15 @@ def interface():
                     newDate = DataRepository.get_closest_date_up(agendaDate)
                     print(newDate)
                     if newDate:
-                        newDate = newDate["Datum"].strftime("%Y-%m-%d")
-                        agendaDate = newDate
+                        agendaDate = newDate["Datum"].strftime("%Y-%m-%d")
                         oled.show_calendar_date(agendaDate)
                 else:
-                    pass
+                    newEvent = DataRepository.get_closest_event_up(agendaDate, eventDate)
+                    print(newEvent)
+                    if newEvent:
+                        eventName = newEvent["Activiteit"]
+                        eventDate = newEvent["Datum"].strftime("%H:%M:%S")
+                        oled.show_calendar_event(eventDate, eventName)
             
             upButtonPressed = False
         
@@ -224,11 +228,15 @@ def interface():
                     newDate = DataRepository.get_closest_date_down(agendaDate)
                     print(newDate)
                     if newDate:
-                        newDate = newDate["Datum"].strftime("%Y-%m-%d")
-                        agendaDate = newDate
+                        agendaDate = newDate["Datum"].strftime("%Y-%m-%d")
                         oled.show_calendar_date(agendaDate)
                 else:
-                    pass
+                    newEvent = DataRepository.get_closest_event_down(agendaDate, eventDate)
+                    print(newEvent)
+                    if newEvent:
+                        eventName = newEvent["Activiteit"]
+                        eventDate = newEvent["Datum"].strftime("%H:%M:%S")
+                        oled.show_calendar_event(eventDate, eventName)
             
             downButtonPressed = False
 
