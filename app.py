@@ -5,7 +5,7 @@ from flask_socketio import SocketIO
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 import threading
 from time import sleep
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from ics import Calendar
 import requests
 
@@ -109,12 +109,27 @@ GPIO.setup(interface_button_up, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(interface_button_down, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(interface_button_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+upButtonPressed = False
+downButtonPressed = False
 rightButtonPressed = False
 interfaceNumber = 1
+agendaCalendar = True
+
+eventName = ""
+eventDate = ""
+
+agendaDate = date.today()
+agendaDate = agendaDate.strftime("%Y-%m-%d")
 
 
 def interface_agenda():
-    oled.show_text("Interface agenda")
+    global agendaDate, agendaCalendar, eventName, eventDate
+
+    if agendaCalendar:
+        oled.show_calendar_date(agendaDate)
+    else:
+        if eventName is not None:
+            oled.show_calendar_event(eventDate, eventName)
 
 
 def interface_klok():
@@ -128,11 +143,15 @@ def interface_ip():
 
 
 def button_up(channel):
-    print("UP")
+    global upButtonPressed
+    upButtonPressed = True
+    #print("UP")
 
 
 def button_down(channel):
-    print("DOWN")
+    global downButtonPressed
+    downButtonPressed = True
+    #print("DOWN")
 
 
 def button_right(channel):
@@ -141,10 +160,10 @@ def button_right(channel):
 
 
 def interface():
-    global rightButtonPressed, interfaceNumber
+    global upButtonPressed, downButtonPressed, rightButtonPressed, interfaceNumber, agendaDate, agendaCalendar, eventName, eventDate
 
-    GPIO.add_event_detect(interface_button_up, GPIO.FALLING, callback=button_up, bouncetime=200)
-    GPIO.add_event_detect(interface_button_down, GPIO.FALLING, callback=button_down, bouncetime=200)
+    GPIO.add_event_detect(interface_button_up, GPIO.FALLING, callback=button_up, bouncetime=500)
+    GPIO.add_event_detect(interface_button_down, GPIO.FALLING, callback=button_down, bouncetime=500)
     GPIO.add_event_detect(interface_button_right, GPIO.FALLING, callback=button_right, bouncetime=200)
 
     interface_agenda()
@@ -164,22 +183,62 @@ def interface():
             if longPressTime >= 1:
                 if interfaceNumber == 1:
                     interfaceNumber = 2
-                    interface_klok()
                 elif interfaceNumber == 2:
                     interfaceNumber = 3
-                    interface_ip()
                 elif interfaceNumber == 3:
                     interfaceNumber = 1
-                    interface_agenda()
                 
                 print(interfaceNumber)
                 print("LONG PRESS")
-                sleep(1)
             else:
                 print("NOT LONG PRESS")
+                if interfaceNumber == 1:
+                    if agendaCalendar:
+                        eventInformation = DataRepository.get_first_event_on_date(agendaDate)
+                        if eventInformation is not None:
+                            eventName = eventInformation["Activiteit"]
+                            eventDate = eventInformation["Datum"].strftime("%H:%M:%S")
+                            agendaCalendar = False
+                    else:
+                        agendaCalendar = True
             
             rightButtonPressed = False
+        
+        if upButtonPressed:
+            if interfaceNumber == 1:
+                if agendaCalendar:
+                    newDate = DataRepository.get_closest_date_up(agendaDate)
+                    print(newDate)
+                    if newDate:
+                        newDate = newDate["Datum"].strftime("%Y-%m-%d")
+                        agendaDate = newDate
+                        oled.show_calendar_date(agendaDate)
+                else:
+                    pass
+            
+            upButtonPressed = False
+        
+        if downButtonPressed:
+            if interfaceNumber == 1:
+                if agendaCalendar:
+                    newDate = DataRepository.get_closest_date_down(agendaDate)
+                    print(newDate)
+                    if newDate:
+                        newDate = newDate["Datum"].strftime("%Y-%m-%d")
+                        agendaDate = newDate
+                        oled.show_calendar_date(agendaDate)
+                else:
+                    pass
+            
+            downButtonPressed = False
 
+        if interfaceNumber == 1:
+            interface_agenda()
+        elif interfaceNumber == 2:
+            interface_klok()
+        elif interfaceNumber == 3:
+            interface_ip()
+        
 
 interface_proces = threading.Timer(0, interface)
 interface_proces.start()

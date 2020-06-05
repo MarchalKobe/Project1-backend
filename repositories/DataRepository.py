@@ -109,3 +109,45 @@ class DataRepository:
         sql = "INSERT INTO Activiteiten (Activiteit, Datum, linkID) SELECT * FROM (SELECT %s, %s, %s) AS tmp WHERE NOT EXISTS (SELECT Activiteit, Datum FROM Activiteiten WHERE Activiteit = %s AND Datum = %s AND LinkID = %s)"
         params = [event, date, linkID, event, date, linkID]
         return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
+    def get_closest_date_up(date):
+        date = f"{date} 23:59:59"
+        sql = "SELECT Datum FROM Activiteiten WHERE Datum > %s ORDER BY Datum ASC LIMIT 1"
+        params = [date]
+        return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def get_closest_date_down(date):
+        date = f"{date} 00:00:00"
+        sql = "SELECT Datum FROM Activiteiten WHERE Datum < %s ORDER BY Datum DESC LIMIT 1"
+        params = [date]
+        return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def get_first_event_on_date(date):
+        date = f"{date}%"
+        sql = "SELECT Datum, Activiteit FROM Activiteiten WHERE Datum LIKE %s ORDER BY Datum ASC LIMIT 1"
+        params = [date]
+        return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def get_closest_event_up(date, time):
+        firstDate = f"{date} {time}"
+        secondDate = f"{date} 23:59:59"
+        sql = "SELECT Datum, Activiteit FROM Activiteiten WHERE Datum < %s and Datum > DATE_SUB(%s, INTERVAL 1 DAY) ORDER BY Datum DESC LIMIT 1"
+        params = [firstDate, secondDate]
+        return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def get_closest_event_down(date, time):
+        firstDate = f"{date} {time}"
+        secondDate = f"{date} 00:00:00"
+        sql = "SELECT Datum, Activiteit FROM Activiteiten WHERE Datum > %s and Datum < DATE_ADD(%s, INTERVAL 1 DAY) ORDER BY Datum ASC LIMIT 1"
+        params = [firstDate, secondDate]
+        return Database.get_one_row(sql, params)
