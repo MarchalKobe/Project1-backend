@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
-import threading
+import multiprocessing
 from time import sleep
 from datetime import datetime, timedelta, date
 from ics import Calendar
@@ -17,46 +17,32 @@ from Luchtkwaliteitsensor import Luchtkwaliteitsensor
 from OLED import OLED
 
 
-# THREAD Temperatuur
+# PROCESS sensors
 temperatuursensor = Temperatuursensor("28-01145b8d5bf2")
+luchtkwaliteitsensor = Luchtkwaliteitsensor()
 
 
-def temperature():
+def sensors():
     while True:
         minute = datetime.now().minute
         if(minute % 15 == 0 or minute == 0):
             temperature = temperatuursensor.get_temperature()
             DataRepository.add_value_sensor(3, temperature)
             print(f"Added temperature: {temperature} to database.")
-            sleep(60)
 
-
-
-temperatuur_proces = threading.Timer(10, temperature)
-temperatuur_proces.start()
-
-
-# THREAD Luchtkwaliteit
-luchtkwaliteitsensor = Luchtkwaliteitsensor()
-
-
-def airquality():
-    while True:
-        minute = datetime.now().minute
-        if(minute % 15 == 0 or minute == 0):
             airquality = luchtkwaliteitsensor.result()
             DataRepository.add_value_sensor(2, airquality)
             print(f"Added airquality: {airquality} to database.")
             sleep(60)
 
 
-luchtkwaliteit_proces = threading.Timer(10, airquality)
-luchtkwaliteit_proces.start()
+sensors_process = multiprocessing.Process(target=sensors)
+sensors_process.start()
 
 calendarStop = False
 
 
-# THREAD Calendar
+# PROCESS Calendar
 def calendar():
     global calendarStop
 
@@ -81,7 +67,8 @@ def calendar():
                                 date = time.strftime("%Y-%m-%d %H:%M:%S")
                                 event = event.name
 
-                                print(calendarStop)
+                                print("Activiteit toegevoegd")
+
                                 DataRepository.add_activiteit_not_exists(event, date, linkID)
                             else:
                                 DataRepository.delete_activiteiten(linkID)
@@ -94,11 +81,11 @@ def calendar():
         sleep(15)
 
 
-calendar_proces = threading.Timer(10, calendar)
-calendar_proces.start()
+calendar_process = multiprocessing.Process(target=calendar)
+calendar_process.start()
 
 
-# THREAD interface
+# PROCESS interface
 oled = OLED()
 
 interface_button_up = 5
@@ -248,8 +235,8 @@ def interface():
             interface_ip()
         
 
-interface_proces = threading.Timer(0, interface)
-interface_proces.start()
+interface_process = multiprocessing.Process(target=interface)
+interface_process.start()
 
 # Start app
 app = Flask(__name__)
