@@ -67,8 +67,6 @@ def calendar():
                                 date = time.strftime("%Y-%m-%d %H:%M:%S")
                                 event = event.name
 
-                                print("Activiteit toegevoegd")
-
                                 DataRepository.add_activiteit_not_exists(event, date, linkID)
                             else:
                                 DataRepository.delete_activiteiten(linkID)
