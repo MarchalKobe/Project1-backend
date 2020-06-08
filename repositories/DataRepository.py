@@ -151,3 +151,10 @@ class DataRepository:
         sql = "SELECT Datum, Activiteit FROM Activiteiten WHERE Datum > %s and Datum < DATE_ADD(%s, INTERVAL 1 DAY) ORDER BY Datum ASC LIMIT 1"
         params = [firstDate, secondDate]
         return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def get_nickname(name):
+        sql = "SELECT Bijnaam FROM Gebruikers WHERE Naam = %s"
+        params = [name]
+        return Database.get_one_row(sql, params)

@@ -109,6 +109,7 @@ class OLED:
         image = Image.new('1', (self.oled.width, self.oled.height))
         draw = ImageDraw.Draw(image)
 
+        # Time
         now = datetime.now()
         text = now.strftime("%H:%M:%S")
 

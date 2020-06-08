@@ -4,13 +4,15 @@ from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 import multiprocessing
+import ctypes
 from time import sleep
 from datetime import datetime, timedelta, date
 from ics import Calendar
 import requests
 
 from RPi import GPIO
-from subprocess import check_output
+from subprocess import check_output, run
+import pathlib
 
 from Temperatuursensor import Temperatuursensor
 from Luchtkwaliteitsensor import Luchtkwaliteitsensor
@@ -86,8 +88,11 @@ calendar_process.start()
 # PROCESS interface
 oled = OLED()
 pir = 23
+audio = 21
 
 GPIO.setup(pir, GPIO.IN)
+GPIO.setup(audio, GPIO.OUT)
+GPIO.output(audio, GPIO.LOW)
 
 interface_button_up = 5
 interface_button_down = 12
@@ -118,6 +123,10 @@ eventDate = ""
 
 agendaDate = date.today()
 agendaDate = agendaDate.strftime("%Y-%m-%d")
+
+showMessage = multiprocessing.Value(ctypes.c_bool, False)
+manager = multiprocessing.Manager()
+messageList = manager.list()
 
 
 def interface_agenda():
@@ -166,7 +175,7 @@ def toggle_button(channel):
 
 
 def interface():
-    global upButtonPressed, downButtonPressed, rightButtonPressed, interfaceNumber, agendaDate, agendaCalendar, eventName, eventDate, sleepMode, interfaceEnabled
+    global upButtonPressed, downButtonPressed, rightButtonPressed, interfaceNumber, agendaDate, agendaCalendar, eventName, eventDate, sleepMode, interfaceEnabled, showMessage, screenNickname, screenMessage
 
     GPIO.add_event_detect(interface_button_up, GPIO.FALLING, callback=button_up, bouncetime=500)
     GPIO.add_event_detect(interface_button_down, GPIO.FALLING, callback=button_down, bouncetime=500)
@@ -176,7 +185,7 @@ def interface():
     interface_agenda()
 
     while True:
-        if interfaceEnabled:
+        if interfaceEnabled and showMessage.value == False:
             if sleepMode == False:
                 if rightButtonPressed:
                     longPress = True
@@ -273,7 +282,18 @@ def interface():
                 
                 oled.clear_screen()
         else:
-            oled.clear_screen()
+            if showMessage.value:
+                path = pathlib.Path(__file__).parent.absolute()
+                GPIO.output(audio, GPIO.HIGH)
+                run(["sudo", "omxplayer", f"{path}/sounds/notification.mp3"])
+                GPIO.output(audio, GPIO.LOW)
+                
+                oled.show_text(f"{messageList[0]}: {messageList[1]}")
+                print(messageList[0], messageList[1])
+                sleep(5)
+                showMessage.value = False
+            else:
+                oled.clear_screen()
         
 
 interface_process = multiprocessing.Process(target=interface)
@@ -415,6 +435,31 @@ def delete_link(id):
             return jsonify(message="Succesvol verwijderd"), 201
         else:
             return jsonify(message="Niks verwijderd"), 201
+
+
+@app.route(endpoint + "/nickname", methods=["GET"])
+@jwt_required
+def get_nickname():
+    if request.method == "GET":
+        user = get_jwt_identity()
+        nickname = DataRepository.get_nickname(user)
+        return jsonify(nickname=nickname), 200
+
+
+@app.route(endpoint + "/sendmessage", methods=["POST"])
+@jwt_required
+def send_message():
+    if request.method == "POST":
+        user = get_jwt_identity()
+        nickname = DataRepository.get_nickname(user)["Bijnaam"]
+        message = DataRepository.json_or_formdata(request)["message"]
+
+        showMessage.value = True
+        messageList[:] = []
+        messageList.append(nickname)
+        messageList.append(message)
+
+        return jsonify(message=message), 200
 
 
 if __name__ == "__main__":
