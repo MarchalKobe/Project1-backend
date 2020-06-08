@@ -105,6 +105,34 @@ class OLED:
         self.oled.show()
     
 
+    def show_message(self, text):
+        image = Image.new('1', (self.oled.width, self.oled.height))
+        draw = ImageDraw.Draw(image)
+
+        # Event
+        split = textwrap.wrap(text, width=21)
+
+        font_width, font_height = self.font.getsize(text)
+
+        line_height = 0
+
+        for line in split:
+            draw.text((0, ((self.oled.height - (font_height * 4)) / 2) + line_height), line, font=self.font, fill=255)
+            line_height += font_height
+
+        # Ja / Nee
+        text = "Ja"
+        text_width, text_height = draw.textsize(text, self.font)
+        draw.text((int(self.oled.width - text_width), 0), text, font=self.font, fill=255)
+
+        text = "Nee"
+        text_width, text_height = draw.textsize(text, self.font)
+        draw.text((int(self.oled.width - text_width), self.oled.height - text_height), text, font=self.font, fill=255)
+
+        self.oled.image(image)
+        self.oled.show()
+    
+
     def show_clock(self):
         image = Image.new('1', (self.oled.width, self.oled.height))
         draw = ImageDraw.Draw(image)

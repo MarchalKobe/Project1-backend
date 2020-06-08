@@ -151,17 +151,20 @@ def interface_ip():
 
 def button_up(channel):
     global upButtonPressed
-    upButtonPressed = True
+    if showMessage.value == False:
+        upButtonPressed = True
 
 
 def button_down(channel):
     global downButtonPressed
-    downButtonPressed = True
+    if showMessage.value == False:
+        downButtonPressed = True
 
 
 def button_right(channel):
     global rightButtonPressed
-    rightButtonPressed = True
+    if showMessage.value == False:
+        rightButtonPressed = True
 
 
 def toggle_button(channel):
@@ -283,14 +286,25 @@ def interface():
                 oled.clear_screen()
         else:
             if showMessage.value:
+                oled.show_message(f"{messageList[0]}: {messageList[1]}")
+                print(messageList[0], messageList[1])
+
                 path = pathlib.Path(__file__).parent.absolute()
                 GPIO.output(audio, GPIO.HIGH)
                 run(["sudo", "omxplayer", f"{path}/sounds/notification.mp3"])
                 GPIO.output(audio, GPIO.LOW)
+
+                answer = False
                 
-                oled.show_text(f"{messageList[0]}: {messageList[1]}")
-                print(messageList[0], messageList[1])
-                sleep(5)
+                while answer == False:
+                    if GPIO.input(interface_button_up) == GPIO.LOW:
+                        DataRepository.update_message_answer(messageList[2], "Ja")
+                        answer = True
+
+                    if GPIO.input(interface_button_down) == GPIO.LOW:
+                        DataRepository.update_message_answer(messageList[2], "Nee")
+                        answer = True
+                
                 showMessage.value = False
             else:
                 oled.clear_screen()
@@ -453,13 +467,25 @@ def send_message():
         user = get_jwt_identity()
         nickname = DataRepository.get_nickname(user)["Bijnaam"]
         message = DataRepository.json_or_formdata(request)["message"]
+        userid = DataRepository.get_user_id(user)["GebruikerID"]
+
+        messageid = DataRepository.add_message(message, userid)
 
         showMessage.value = True
         messageList[:] = []
         messageList.append(nickname)
         messageList.append(message)
+        messageList.append(messageid)
 
-        return jsonify(message=message), 200
+        return jsonify(id=messageid), 200
+
+
+@app.route(endpoint + "/message/answer/<id>", methods=["GET"])
+@jwt_required
+def get_message_answer(id):
+    if request.method == "GET":
+        data = DataRepository.get_message_answer(id)
+        return jsonify(answer=data), 200
 
 
 if __name__ == "__main__":

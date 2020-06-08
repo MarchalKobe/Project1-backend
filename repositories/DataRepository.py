@@ -158,3 +158,31 @@ class DataRepository:
         sql = "SELECT Bijnaam FROM Gebruikers WHERE Naam = %s"
         params = [name]
         return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def get_user_id(name):
+        sql = "SELECT GebruikerID FROM Gebruikers WHERE Naam = %s"
+        params = [name]
+        return Database.get_one_row(sql, params)
+    
+
+    @staticmethod
+    def add_message(message, userid):
+        sql = "INSERT INTO Historiek (ApparaatID, Waarde, GebruikerID) VALUES (1, %s, %s)"
+        params = [message, userid]
+        return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
+    def update_message_answer(messageid, answer):
+        sql = "UPDATE Historiek SET Antwoord = %s WHERE VolgID = %s"
+        params = [answer, messageid]
+        return Database.execute_sql(sql, params)
+    
+
+    @staticmethod
+    def get_message_answer(messageid):
+        sql = "SELECT Antwoord FROM Historiek WHERE VolgID = %s"
+        params = [messageid]
+        return Database.get_one_row(sql, params)
