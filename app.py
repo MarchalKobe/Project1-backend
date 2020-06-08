@@ -85,20 +85,33 @@ calendar_process.start()
 
 # PROCESS interface
 oled = OLED()
+pir = 23
+
+GPIO.setup(pir, GPIO.IN)
 
 interface_button_up = 5
 interface_button_down = 12
 interface_button_right = 6
+interface_toggle = 13
 
 GPIO.setup(interface_button_up, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(interface_button_down, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(interface_button_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(interface_toggle, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+if GPIO.input(interface_toggle) == GPIO.LOW:
+    print("ON")
+    interfaceEnabled = True
+else:
+    print("OFF")
+    interfaceEnabled = False
 
 upButtonPressed = False
 downButtonPressed = False
 rightButtonPressed = False
 interfaceNumber = 1
 agendaCalendar = True
+sleepMode = False
 
 eventName = ""
 eventDate = ""
@@ -118,7 +131,7 @@ def interface_agenda():
 
 
 def interface_klok():
-    oled.show_text("Interface klok")
+    oled.show_clock()
 
 
 def interface_ip():
@@ -130,13 +143,11 @@ def interface_ip():
 def button_up(channel):
     global upButtonPressed
     upButtonPressed = True
-    #print("UP")
 
 
 def button_down(channel):
     global downButtonPressed
     downButtonPressed = True
-    #print("DOWN")
 
 
 def button_right(channel):
@@ -144,93 +155,125 @@ def button_right(channel):
     rightButtonPressed = True
 
 
+def toggle_button(channel):
+    global interfaceEnabled
+    if GPIO.input(interface_toggle) == GPIO.LOW:
+        print("ON")
+        interfaceEnabled = True
+    else:
+        print("OFF")
+        interfaceEnabled = False
+
+
 def interface():
-    global upButtonPressed, downButtonPressed, rightButtonPressed, interfaceNumber, agendaDate, agendaCalendar, eventName, eventDate
+    global upButtonPressed, downButtonPressed, rightButtonPressed, interfaceNumber, agendaDate, agendaCalendar, eventName, eventDate, sleepMode, interfaceEnabled
 
     GPIO.add_event_detect(interface_button_up, GPIO.FALLING, callback=button_up, bouncetime=500)
     GPIO.add_event_detect(interface_button_down, GPIO.FALLING, callback=button_down, bouncetime=500)
     GPIO.add_event_detect(interface_button_right, GPIO.FALLING, callback=button_right, bouncetime=200)
+    GPIO.add_event_detect(interface_toggle, GPIO.BOTH, callback=toggle_button, bouncetime=200)
 
     interface_agenda()
 
     while True:
-        if rightButtonPressed:
-            longPress = True
-            longPressTime = 0
+        if interfaceEnabled:
+            if sleepMode == False:
+                if rightButtonPressed:
+                    longPress = True
+                    longPressTime = 0
 
-            while longPress and longPressTime <= 1:
-                if GPIO.input(interface_button_right) == GPIO.LOW:
-                    sleep(0.1)
-                    longPressTime += 0.1
-                else:
-                    longPress = False
+                    while longPress and longPressTime <= 1:
+                        if GPIO.input(interface_button_right) == GPIO.LOW:
+                            sleep(0.1)
+                            longPressTime += 0.1
+                        else:
+                            longPress = False
 
-            if longPressTime >= 1:
-                if interfaceNumber == 1:
-                    interfaceNumber = 2
-                elif interfaceNumber == 2:
-                    interfaceNumber = 3
-                elif interfaceNumber == 3:
-                    interfaceNumber = 1
-                
-                print(interfaceNumber)
-                print("LONG PRESS")
-            else:
-                print("NOT LONG PRESS")
-                if interfaceNumber == 1:
-                    if agendaCalendar:
-                        eventInformation = DataRepository.get_first_event_on_date(agendaDate)
-                        if eventInformation is not None:
-                            eventName = eventInformation["Activiteit"]
-                            eventDate = eventInformation["Datum"].strftime("%H:%M:%S")
-                            agendaCalendar = False
+                    if longPressTime >= 1:
+                        if interfaceNumber == 1:
+                            interfaceNumber = 2
+                        elif interfaceNumber == 2:
+                            interfaceNumber = 3
+                        elif interfaceNumber == 3:
+                            interfaceNumber = 1
+                        
+                        print(interfaceNumber)
+                        print("LONG PRESS")
+                        sleep(0.5)
                     else:
-                        agendaCalendar = True
-            
-            rightButtonPressed = False
-        
-        if upButtonPressed:
-            if interfaceNumber == 1:
-                if agendaCalendar:
-                    newDate = DataRepository.get_closest_date_up(agendaDate)
-                    print(newDate)
-                    if newDate:
-                        agendaDate = newDate["Datum"].strftime("%Y-%m-%d")
-                        oled.show_calendar_date(agendaDate)
-                else:
-                    newEvent = DataRepository.get_closest_event_up(agendaDate, eventDate)
-                    print(newEvent)
-                    if newEvent:
-                        eventName = newEvent["Activiteit"]
-                        eventDate = newEvent["Datum"].strftime("%H:%M:%S")
-                        oled.show_calendar_event(eventDate, eventName)
-            
-            upButtonPressed = False
-        
-        if downButtonPressed:
-            if interfaceNumber == 1:
-                if agendaCalendar:
-                    newDate = DataRepository.get_closest_date_down(agendaDate)
-                    print(newDate)
-                    if newDate:
-                        agendaDate = newDate["Datum"].strftime("%Y-%m-%d")
-                        oled.show_calendar_date(agendaDate)
-                else:
-                    newEvent = DataRepository.get_closest_event_down(agendaDate, eventDate)
-                    print(newEvent)
-                    if newEvent:
-                        eventName = newEvent["Activiteit"]
-                        eventDate = newEvent["Datum"].strftime("%H:%M:%S")
-                        oled.show_calendar_event(eventDate, eventName)
-            
-            downButtonPressed = False
+                        print("NOT LONG PRESS")
+                        if interfaceNumber == 1:
+                            if agendaCalendar:
+                                eventInformation = DataRepository.get_first_event_on_date(agendaDate)
+                                if eventInformation is not None:
+                                    eventName = eventInformation["Activiteit"]
+                                    eventDate = eventInformation["Datum"].strftime("%H:%M:%S")
+                                    agendaCalendar = False
+                            else:
+                                agendaCalendar = True
+                        if interfaceNumber == 2:
+                            sleepMode = True
+                    
+                    rightButtonPressed = False
+                
+                if upButtonPressed:
+                    if interfaceNumber == 1:
+                        if agendaCalendar:
+                            newDate = DataRepository.get_closest_date_up(agendaDate)
+                            print(newDate)
+                            if newDate:
+                                agendaDate = newDate["Datum"].strftime("%Y-%m-%d")
+                                oled.show_calendar_date(agendaDate)
+                        else:
+                            newEvent = DataRepository.get_closest_event_up(agendaDate, eventDate)
+                            print(newEvent)
+                            if newEvent:
+                                eventName = newEvent["Activiteit"]
+                                eventDate = newEvent["Datum"].strftime("%H:%M:%S")
+                                oled.show_calendar_event(eventDate, eventName)
+                    
+                    upButtonPressed = False
+                
+                if downButtonPressed:
+                    if interfaceNumber == 1:
+                        if agendaCalendar:
+                            newDate = DataRepository.get_closest_date_down(agendaDate)
+                            print(newDate)
+                            if newDate:
+                                agendaDate = newDate["Datum"].strftime("%Y-%m-%d")
+                                oled.show_calendar_date(agendaDate)
+                        else:
+                            newEvent = DataRepository.get_closest_event_down(agendaDate, eventDate)
+                            print(newEvent)
+                            if newEvent:
+                                eventName = newEvent["Activiteit"]
+                                eventDate = newEvent["Datum"].strftime("%H:%M:%S")
+                                oled.show_calendar_event(eventDate, eventName)
+                    
+                    downButtonPressed = False
 
-        if interfaceNumber == 1:
-            interface_agenda()
-        elif interfaceNumber == 2:
-            interface_klok()
-        elif interfaceNumber == 3:
-            interface_ip()
+                if interfaceNumber == 1:
+                    interface_agenda()
+                elif interfaceNumber == 2:
+                    interface_klok()
+                elif interfaceNumber == 3:
+                    interface_ip()
+            else:
+                if rightButtonPressed:
+                    sleepMode = False
+                    rightButtonPressed = False
+                
+                if GPIO.input(pir) == GPIO.HIGH:
+                    showClockTime = 0
+
+                    while showClockTime <= 4:
+                        oled.show_clock()
+                        sleep(0.1)
+                        showClockTime += 0.1
+                
+                oled.clear_screen()
+        else:
+            oled.clear_screen()
         
 
 interface_process = multiprocessing.Process(target=interface)

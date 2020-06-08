@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw, ImageFont
 import adafruit_ssd1305
 import textwrap
 import pathlib
+from datetime import datetime
 
 class OLED:
     def __init__(self, width=128, height=64, cs=board.D19, dc=board.D16, reset=board.D20):
@@ -101,4 +102,23 @@ class OLED:
         image.paste(arrow_down, (int(self.oled.width / 2) - int(arrow_down_size[0] / 2), self.oled.height - arrow_down_size[1]))
         
         self.oled.image(image)
+        self.oled.show()
+    
+
+    def show_clock(self):
+        image = Image.new('1', (self.oled.width, self.oled.height))
+        draw = ImageDraw.Draw(image)
+
+        now = datetime.now()
+        text = now.strftime("%H:%M:%S")
+
+        font_width, font_height = self.font.getsize(text)
+        draw.text(((self.oled.width - font_width) / 2, (self.oled.height - font_height) / 2), text, font=self.font, fill=255)
+        
+        self.oled.image(image)
+        self.oled.show()
+    
+
+    def clear_screen(self):
+        self.oled.fill(0)
         self.oled.show()
