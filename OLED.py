@@ -28,6 +28,20 @@ class OLED:
         self.font = ImageFont.truetype(f"{path}/fonts/repet.ttf")
 
 
+    def show_logo(self):
+        image = Image.new('1', (self.oled.width, self.oled.height))
+        draw = ImageDraw.Draw(image)
+
+        # EasyTalk
+        text = "EasyTalk"
+
+        font_width, font_height = self.font.getsize(text)
+        draw.text(((self.oled.width - font_width) / 2, (self.oled.height - font_height) / 2), text, font=self.font, fill=255)
+        
+        self.oled.image(image)
+        self.oled.show()
+
+
     def show_text(self, text):
         image = Image.new('1', (self.oled.width, self.oled.height))
         draw = ImageDraw.Draw(image)

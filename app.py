@@ -90,6 +90,9 @@ oled = OLED()
 pir = 23
 audio = 21
 
+oled.show_logo()
+sleep(2)
+
 GPIO.setup(pir, GPIO.IN)
 GPIO.setup(audio, GPIO.OUT)
 GPIO.output(audio, GPIO.LOW)
