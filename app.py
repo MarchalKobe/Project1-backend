@@ -20,7 +20,7 @@ from OLED import OLED
 
 
 # PROCESS sensors
-temperatuursensor = Temperatuursensor("28-01145b8d5bf2")
+temperatuursensor = Temperatuursensor("28-0119280f729e")
 luchtkwaliteitsensor = Luchtkwaliteitsensor()
 
 

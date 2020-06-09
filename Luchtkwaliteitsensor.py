@@ -19,12 +19,4 @@ class Luchtkwaliteitsensor:
 
 	def result(self):
 		sensor_value = self.adc_read()
-
 		return sensor_value
-
-		# if sensor_value > 700:
-		# 	return f"{sensor_value} Hoge verontreiniging"
-		# elif sensor_value > 300:
-		# 	return f"{sensor_value} Lage verontreiniging"
-		# else:
-		# 	return f"{sensor_value} Lucht is zuiver"
