@@ -108,10 +108,8 @@ GPIO.setup(interface_button_right, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(interface_toggle, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 if GPIO.input(interface_toggle) == GPIO.LOW:
-    print("ON")
     interfaceEnabled = True
 else:
-    print("OFF")
     interfaceEnabled = False
 
 upButtonPressed = False
@@ -146,6 +144,10 @@ def interface_klok():
     oled.show_clock()
 
 
+def interface_sensoren():
+    oled.show_sensors(f"{temperatuursensor.get_temperature():.2f}", luchtkwaliteitsensor.result())
+
+
 def interface_ip():
     ips = check_output(["hostname", "--all-ip-addresses"])
     ips = ips.decode("utf-8").split()
@@ -172,11 +174,11 @@ def button_right(channel):
 
 def toggle_button(channel):
     global interfaceEnabled
+    sleep(0.1)
+
     if GPIO.input(interface_toggle) == GPIO.LOW:
-        print("ON")
         interfaceEnabled = True
     else:
-        print("OFF")
         interfaceEnabled = False
 
 
@@ -210,13 +212,12 @@ def interface():
                         elif interfaceNumber == 2:
                             interfaceNumber = 3
                         elif interfaceNumber == 3:
+                            interfaceNumber = 4
+                        elif interfaceNumber == 4:
                             interfaceNumber = 1
                         
-                        print(interfaceNumber)
-                        print("LONG PRESS")
                         sleep(0.5)
                     else:
-                        print("NOT LONG PRESS")
                         if interfaceNumber == 1:
                             if agendaCalendar:
                                 eventInformation = DataRepository.get_first_event_on_date(agendaDate)
@@ -235,13 +236,11 @@ def interface():
                     if interfaceNumber == 1:
                         if agendaCalendar:
                             newDate = DataRepository.get_closest_date_up(agendaDate)
-                            print(newDate)
                             if newDate:
                                 agendaDate = newDate["Datum"].strftime("%Y-%m-%d")
                                 oled.show_calendar_date(agendaDate)
                         else:
                             newEvent = DataRepository.get_closest_event_up(agendaDate, eventDate)
-                            print(newEvent)
                             if newEvent:
                                 eventName = newEvent["Activiteit"]
                                 eventDate = newEvent["Datum"].strftime("%H:%M:%S")
@@ -253,13 +252,11 @@ def interface():
                     if interfaceNumber == 1:
                         if agendaCalendar:
                             newDate = DataRepository.get_closest_date_down(agendaDate)
-                            print(newDate)
                             if newDate:
                                 agendaDate = newDate["Datum"].strftime("%Y-%m-%d")
                                 oled.show_calendar_date(agendaDate)
                         else:
                             newEvent = DataRepository.get_closest_event_down(agendaDate, eventDate)
-                            print(newEvent)
                             if newEvent:
                                 eventName = newEvent["Activiteit"]
                                 eventDate = newEvent["Datum"].strftime("%H:%M:%S")
@@ -272,6 +269,8 @@ def interface():
                 elif interfaceNumber == 2:
                     interface_klok()
                 elif interfaceNumber == 3:
+                    interface_sensoren()
+                elif interfaceNumber == 4:
                     interface_ip()
             else:
                 if rightButtonPressed:
@@ -289,24 +288,27 @@ def interface():
                 oled.clear_screen()
         else:
             if showMessage.value:
-                oled.show_message(f"{messageList[0]}: {messageList[1]}")
-                print(messageList[0], messageList[1])
+                try:
+                    oled.show_message(f"{messageList[0]}: {messageList[1]}")
 
-                path = pathlib.Path(__file__).parent.absolute()
-                GPIO.output(audio, GPIO.HIGH)
-                run(["sudo", "omxplayer", f"{path}/sounds/notification.mp3"])
-                GPIO.output(audio, GPIO.LOW)
+                    path = pathlib.Path(__file__).parent.absolute()
+                    GPIO.output(audio, GPIO.HIGH)
+                    run(["sudo", "omxplayer", f"{path}/sounds/notification.mp3"])
+                    GPIO.output(audio, GPIO.LOW)
 
-                answer = False
-                
-                while answer == False:
-                    if GPIO.input(interface_button_up) == GPIO.LOW:
-                        DataRepository.update_message_answer(messageList[2], "Ja")
-                        answer = True
+                    answer = False
+                    
+                    while answer == False:
+                        if GPIO.input(interface_button_up) == GPIO.LOW:
+                            DataRepository.update_message_answer(messageList[2], "Ja")
+                            answer = True
 
-                    if GPIO.input(interface_button_down) == GPIO.LOW:
-                        DataRepository.update_message_answer(messageList[2], "Nee")
-                        answer = True
+                        if GPIO.input(interface_button_down) == GPIO.LOW:
+                            DataRepository.update_message_answer(messageList[2], "Nee")
+                            answer = True
+                except Exception as e:
+                    GPIO.output(audio, GPIO.LOW)
+                    print(e)
                 
                 showMessage.value = False
             else:

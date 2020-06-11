@@ -59,6 +59,23 @@ class OLED:
         
         self.oled.image(image)
         self.oled.show()
+
+
+    def show_sensors(self, temp, air):
+        image = Image.new('1', (self.oled.width, self.oled.height))
+        draw = ImageDraw.Draw(image)
+
+        # Temperature
+        text = f"Temperatuur: {temp}°C"
+        draw.text((0, 0), text, font=self.font, fill=255)
+
+        # Air quality
+        text = f"Luchtkwaliteit: {air}"
+        font_width, font_height = self.font.getsize(text)
+        draw.text((0, font_height * 2), text, font=self.font, fill=255)
+        
+        self.oled.image(image)
+        self.oled.show()
     
 
     def show_calendar_date(self, date):
