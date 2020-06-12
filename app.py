@@ -90,12 +90,12 @@ oled = OLED()
 pir = 23
 audio = 21
 
-oled.show_logo()
-sleep(2)
-
 GPIO.setup(pir, GPIO.IN)
 GPIO.setup(audio, GPIO.OUT)
 GPIO.output(audio, GPIO.LOW)
+
+oled.show_logo()
+sleep(2)
 
 interface_button_up = 5
 interface_button_down = 12
@@ -149,9 +149,12 @@ def interface_sensoren():
 
 
 def interface_ip():
-    ips = check_output(["hostname", "--all-ip-addresses"])
-    ips = ips.decode("utf-8").split()
-    oled.show_text(f"IP: {ips[0]}")
+    try:
+        ips = check_output(["hostname", "--all-ip-addresses"])
+        ips = ips.decode("utf-8").split()
+        oled.show_text(f"IP: {ips[0]}")
+    except:
+        oled.show_text("IP: wachten..")
 
 
 def button_up(channel):
