@@ -115,7 +115,7 @@ else:
 upButtonPressed = False
 downButtonPressed = False
 rightButtonPressed = False
-interfaceNumber = 1
+interfaceNumber = 4
 agendaCalendar = True
 sleepMode = False
 
@@ -190,7 +190,7 @@ def interface():
     GPIO.add_event_detect(interface_button_right, GPIO.FALLING, callback=button_right, bouncetime=200)
     GPIO.add_event_detect(interface_toggle, GPIO.BOTH, callback=toggle_button, bouncetime=200)
 
-    interface_agenda()
+    interface_ip()
 
     while True:
         if interfaceEnabled and showMessage.value == False:
